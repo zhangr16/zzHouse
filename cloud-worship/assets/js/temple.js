@@ -7,7 +7,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { SSRPass } from "three/addons/postprocessing/SSRPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { createTempleNetwork } from "./net.js";
+import { createTempleNetwork } from "./net.js?v=20261122joystick";
 
 const canvas = document.getElementById("temple-canvas");
 const overlay = document.getElementById("loading-overlay");
@@ -28,8 +28,20 @@ const roomInput = document.getElementById("room-input");
 const joinRoomButton = document.getElementById("join-room-button");
 const networkStatus = document.getElementById("network-status");
 const onlineCount = document.getElementById("online-count");
+const chatToggle = document.getElementById("chat-toggle");
+const chatPanel = document.getElementById("chat-panel");
+const chatMessages = document.getElementById("chat-messages");
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const chatClose = document.getElementById("chat-close");
+const chatUnread = document.getElementById("chat-unread");
+const joystickBase = document.getElementById("joystick-base");
+const joystickKnob = document.getElementById("joystick-knob");
+const virtualJoystick = document.getElementById("virtual-joystick");
 const windGroups = [];
 let network = null;
+let unreadChatCount = 0;
+const chatHistory = [];
 const actionAudio = {
   trick: new Audio("assets/jitaimei.m4a"),
   pray: new Audio("assets/niganma.mp3")
@@ -1333,16 +1345,9 @@ composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight),
 composer.addPass(new OutputPass());
 
 const keys = { forward: false, backward: false, left: false, right: false };
-const state = { location: "temple", velocity: new THREE.Vector3(), heading: Math.PI, praying: false, prayingOnFortune: false, prayTimer: 0, dancing: false, danceTimer: 0, incense: 0, hasIncense: false, carriedIncense: null, incenseRitual: null, bellTimer: 0, woodfishSession: false, woodfishTimer: 0, nextWoodfish: 0, woodfishMusicStarted: false, moveTarget: null, walkPhase: 0, clock: new THREE.Clock(), toastTimer: 0 };
-const cameraControl = { yaw: 0, pitch: .25, radius: 7, targetYaw: 0, targetPitch: .25, targetRadius: 7, pointers: new Map(), lastDistance: 0, dragDistance: 0, downTime: 0 };
-const raycaster = new THREE.Raycaster();
-const groundPlane = new THREE.Mesh(new THREE.PlaneGeometry(70, 50), new THREE.MeshBasicMaterial({ visible: false }));
-groundPlane.rotation.x = -Math.PI / 2; groundPlane.position.set(0, 0, 4); scene.add(groundPlane);
-const moveMarker = new THREE.Group();
-const moveMarkerRing = new THREE.Mesh(new THREE.RingGeometry(.13, .21, 36), new THREE.MeshBasicMaterial({ color: "#ffd479", transparent: true, opacity: .78, side: THREE.DoubleSide }));
-const moveMarkerDot = new THREE.Mesh(new THREE.CircleGeometry(.055, 24), new THREE.MeshBasicMaterial({ color: "#fff3cd", transparent: true, opacity: .82 }));
-moveMarkerRing.rotation.x = moveMarkerDot.rotation.x = -Math.PI / 2;
-moveMarker.add(moveMarkerRing, moveMarkerDot); moveMarker.visible = false; scene.add(moveMarker);
+const state = { location: "temple", velocity: new THREE.Vector3(), heading: Math.PI, praying: false, prayingOnFortune: false, prayTimer: 0, dancing: false, danceTimer: 0, incense: 0, hasIncense: false, carriedIncense: null, incenseRitual: null, bellTimer: 0, woodfishSession: false, woodfishTimer: 0, nextWoodfish: 0, woodfishMusicStarted: false, walkPhase: 0, clock: new THREE.Clock(), toastTimer: 0 };
+const cameraControl = { yaw: 0, pitch: .25, radius: 7, targetYaw: 0, targetPitch: .25, targetRadius: 7, pointers: new Map(), dragDistance: 0, downTime: 0 };
+const joystick = { active: false, pointerId: null, x: 0, y: 0 };
 const smokePositions = new Float32Array(360 * 3).fill(-50);
 const smokeGeometry = new THREE.BufferGeometry();
 smokeGeometry.setAttribute("position", new THREE.BufferAttribute(smokePositions, 3));
@@ -1698,9 +1703,14 @@ function setChibiPose(settle, torsoBow, headBow, handsTogether, breath) {
 }
 
 function updateAvatar(delta) {
-  const inputX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  const inputY = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
-  if ((inputX || inputY) && state.moveTarget) { state.moveTarget = null; moveMarker.visible = false; }
+  const keyX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const keyY = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
+  const joystickStrength = joystick.active ? Math.hypot(joystick.x, joystick.y) : 0;
+  const joystickX = joystickStrength > .08 ? joystick.x : 0;
+  const joystickY = joystickStrength > .08 ? -joystick.y : 0;
+  const inputX = THREE.MathUtils.clamp(keyX + joystickX, -1, 1);
+  const inputY = THREE.MathUtils.clamp(keyY + joystickY, -1, 1);
+  const inputStrength = Math.min(1, Math.hypot(inputX, inputY));
   basketball.visible = !state.praying && !state.incenseRitual && !state.hasIncense && !state.dancing;
   if (state.dancing) {
     state.danceTimer += delta; const time = state.danceTimer, beat = time * 3.2;
@@ -1815,29 +1825,14 @@ function updateAvatar(delta) {
 
   const forward = new THREE.Vector3(-Math.sin(cameraControl.yaw), 0, -Math.cos(cameraControl.yaw));
   const right = new THREE.Vector3(Math.cos(cameraControl.yaw), 0, -Math.sin(cameraControl.yaw));
-  let direction;
-  if (state.moveTarget && !inputX && !inputY) {
-    const targetX = state.moveTarget.x - avatar.position.x, targetZ = state.moveTarget.z - avatar.position.z;
-    const targetDistance = Math.hypot(targetX, targetZ);
-    if (targetDistance < .18) {
-      state.moveTarget = null; moveMarker.visible = false;
-    } else {
-      direction = new THREE.Vector3(targetX / targetDistance, 0, targetZ / targetDistance);
-      state.heading = Math.atan2(direction.x, direction.z); avatar.rotation.y = state.heading;
-      state.walkPhase += delta * 9;
-    }
-  }
-  if (!direction) direction = forward.multiplyScalar(inputY).add(right.multiplyScalar(inputX));
-  const speed = direction.lengthSq() ? 2 : 0;
+  const direction = forward.multiplyScalar(inputY).add(right.multiplyScalar(inputX));
+  const speed = direction.lengthSq() ? 2 * Math.max(.28, inputStrength) : 0;
   if (direction.lengthSq()) { direction.normalize(); state.heading = Math.atan2(direction.x, direction.z); avatar.rotation.y = state.heading; state.walkPhase += delta * 9; }
   state.velocity.lerp(direction.multiplyScalar(speed), 1 - Math.exp(-12 * delta));
   const nextX = avatar.position.x + state.velocity.x * delta, nextZ = avatar.position.z + state.velocity.z * delta;
   const blocked = colliders.some(({ x, z, radius }) => (nextX - x) ** 2 + (nextZ - z) ** 2 < (radius + .22) ** 2);
   if (!blocked) { avatar.position.x = nextX; avatar.position.z = nextZ; }
-  else {
-    state.velocity.multiplyScalar(.08);
-    if (state.moveTarget) { state.moveTarget = null; moveMarker.visible = false; }
-  }
+  else state.velocity.multiplyScalar(.08);
   const outdoor = avatar.position.z > 7.5;
   avatar.position.x = THREE.MathUtils.clamp(avatar.position.x, outdoor ? -9.7 : -5.3, outdoor ? 9.7 : 5.3);
   avatar.position.z = THREE.MathUtils.clamp(avatar.position.z, -3.3, 15.3);
@@ -1937,16 +1932,11 @@ function resize() {
 }
 
 const defaultCameraView = { yaw: 0, pitch: .25, radius: 7 };
-const closeCameraView = { yaw: 0, pitch: .30, radius: 5 };
 function resetCamera() {
-  const atDefaultView = Math.abs(cameraControl.targetYaw - defaultCameraView.yaw) < .01
-    && Math.abs(cameraControl.targetPitch - defaultCameraView.pitch) < .01
-    && Math.abs(cameraControl.targetRadius - defaultCameraView.radius) < .01;
-  const view = atDefaultView ? closeCameraView : defaultCameraView;
-  cameraControl.targetYaw = view.yaw;
-  cameraControl.targetPitch = view.pitch;
-  cameraControl.targetRadius = view.radius;
-  showToast(atDefaultView ? "已切换到近景视角" : "已回到默认视角");
+  cameraControl.targetYaw = defaultCameraView.yaw;
+  cameraControl.targetPitch = defaultCameraView.pitch;
+  cameraControl.targetRadius = defaultCameraView.radius;
+  showToast("已恢复默认视角");
 }
 
 const ambientAudio = { context: null, master: null, playing: false, timer: 0 };
@@ -1998,53 +1988,89 @@ function toggleMusic() {
 }
 
 const keyMap = { KeyW: "forward", ArrowUp: "forward", KeyS: "backward", ArrowDown: "backward", KeyA: "left", ArrowLeft: "left", KeyD: "right", ArrowRight: "right" };
-addEventListener("keydown", event => { if (keyMap[event.code]) keys[keyMap[event.code]] = true; if (event.code === "KeyJ") pray(); if (event.code === "KeyK") lightIncense(); if (event.code === "KeyG") performTrick(); if (event.code === "Escape") fortunePanel.hidden = true; });
+function isTypingTarget(target) {
+  return target instanceof Element && target.matches("input, textarea, [contenteditable='true']");
+}
+addEventListener("keydown", event => {
+  if ((event.metaKey || event.ctrlKey) && ["+", "=", "-", "0"].includes(event.key)) { event.preventDefault(); return; }
+  if (event.code === "Escape") {
+    if (!chatPanel.hidden) { setChatPanel(false); chatInput.blur(); return; }
+    fortunePanel.hidden = true; zodiacPanel.hidden = true; weatherPanel.hidden = true;
+    return;
+  }
+  if (isTypingTarget(event.target)) return;
+  if (keyMap[event.code]) keys[keyMap[event.code]] = true;
+  if (event.code === "KeyJ") pray();
+  if (event.code === "KeyK") lightIncense();
+  if (event.code === "KeyG") performTrick();
+});
 addEventListener("keyup", event => { if (keyMap[event.code]) keys[keyMap[event.code]] = false; });
-document.querySelectorAll(".pad-button").forEach(button => {
-  const direction = button.dataset.direction;
-  button.addEventListener("pointerdown", event => { event.preventDefault(); keys[direction] = true; button.setPointerCapture(event.pointerId); });
-  ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => button.addEventListener(type, () => keys[direction] = false));
+function updateJoystick(event) {
+  const rect = joystickBase.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const radius = rect.width * .34;
+  let dx = event.clientX - centerX;
+  let dy = event.clientY - centerY;
+  const distance = Math.hypot(dx, dy);
+  if (distance > radius) {
+    dx = dx / distance * radius;
+    dy = dy / distance * radius;
+  }
+  joystick.x = dx / radius;
+  joystick.y = dy / radius;
+  joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+}
+function resetJoystick() {
+  const pointerId = joystick.pointerId;
+  joystick.active = false;
+  joystick.pointerId = null;
+  joystick.x = 0;
+  joystick.y = 0;
+  joystickKnob.style.transform = "translate(0px, 0px)";
+  virtualJoystick.classList.remove("active");
+  if (pointerId !== null && joystickBase.hasPointerCapture(pointerId)) joystickBase.releasePointerCapture(pointerId);
+}
+joystickBase.addEventListener("pointerdown", event => {
+  if (joystick.active) return;
+  event.preventDefault();
+  joystick.active = true;
+  joystick.pointerId = event.pointerId;
+  virtualJoystick.classList.add("active");
+  joystickBase.setPointerCapture(event.pointerId);
+  updateJoystick(event);
+});
+joystickBase.addEventListener("pointermove", event => {
+  if (!joystick.active || joystick.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  updateJoystick(event);
+});
+["pointerup", "pointercancel", "lostpointercapture"].forEach(type => {
+  joystickBase.addEventListener(type, event => {
+    if (joystick.pointerId !== event.pointerId) return;
+    resetJoystick();
+  });
 });
 canvas.addEventListener("pointerdown", event => {
-  cameraControl.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY }); canvas.setPointerCapture(event.pointerId);
-  cameraControl.dragDistance = 0; cameraControl.downTime = performance.now();
-  if (cameraControl.pointers.size === 2) { const [a, b] = [...cameraControl.pointers.values()]; cameraControl.lastDistance = Math.hypot(a.x - b.x, a.y - b.y); }
+  cameraControl.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  canvas.setPointerCapture(event.pointerId);
+  cameraControl.dragDistance = 0;
+  cameraControl.downTime = performance.now();
 });
 canvas.addEventListener("pointermove", event => {
-  if (!cameraControl.pointers.has(event.pointerId)) return;
-  const previous = cameraControl.pointers.get(event.pointerId); cameraControl.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (!cameraControl.pointers.has(event.pointerId) || cameraControl.pointers.size !== 1) return;
+  const previous = cameraControl.pointers.get(event.pointerId);
+  cameraControl.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
   cameraControl.dragDistance += Math.hypot(event.clientX - previous.x, event.clientY - previous.y);
-  if (cameraControl.pointers.size === 1) { cameraControl.targetYaw -= (event.clientX - previous.x) * .0065; cameraControl.targetPitch += (event.clientY - previous.y) * .004; }
-  else if (cameraControl.pointers.size === 2) {
-    const [a, b] = [...cameraControl.pointers.values()]; const distance = Math.hypot(a.x - b.x, a.y - b.y);
-    if (cameraControl.lastDistance) cameraControl.targetRadius = THREE.MathUtils.clamp(cameraControl.targetRadius - (distance - cameraControl.lastDistance) * .02, 2.6, 7);
-    cameraControl.lastDistance = distance;
-  }
+  cameraControl.targetYaw -= (event.clientX - previous.x) * .0065;
+  cameraControl.targetPitch += (event.clientY - previous.y) * .004;
 });
-function moveToPoint(clientX, clientY) {
-  if (state.praying || state.incenseRitual || state.dancing || state.woodfishSession) return;
-  const rect = canvas.getBoundingClientRect();
-  raycaster.setFromCamera(new THREE.Vector2(
-    ((clientX - rect.left) / rect.width) * 2 - 1,
-    -((clientY - rect.top) / rect.height) * 2 + 1
-  ), camera);
-  const [hit] = raycaster.intersectObject(groundPlane);
-  if (!hit) return;
-  const outdoor = hit.point.z > 7.5;
-  const target = hit.point.clone();
-  target.x = THREE.MathUtils.clamp(target.x, outdoor ? -9.7 : -5.3, outdoor ? 9.7 : 5.3);
-  target.z = THREE.MathUtils.clamp(target.z, -3.3, 15.3);
-  state.moveTarget = { x: target.x, z: target.z };
-  moveMarker.position.set(target.x, groundLevel(target.z) + .025, target.z);
-  moveMarker.visible = true;
-}
-["pointerup", "pointercancel"].forEach(type => canvas.addEventListener(type, event => {
-  const activePointers = cameraControl.pointers.size;
-  if (type === "pointerup" && activePointers === 1 && cameraControl.dragDistance < 12 && performance.now() - cameraControl.downTime < 650) moveToPoint(event.clientX, event.clientY);
-  cameraControl.pointers.delete(event.pointerId); cameraControl.lastDistance = 0;
+["pointerup", "pointercancel", "lostpointercapture"].forEach(type => canvas.addEventListener(type, event => {
+  cameraControl.pointers.delete(event.pointerId);
 }));
-canvas.addEventListener("wheel", event => { event.preventDefault(); cameraControl.targetRadius = THREE.MathUtils.clamp(cameraControl.targetRadius + event.deltaY * .004, 2.6, 7); }, { passive: false });
-canvas.addEventListener("contextmenu", event => event.preventDefault());
+canvas.addEventListener("wheel", event => event.preventDefault(), { passive: false });
+["gesturestart", "gesturechange", "gestureend"].forEach(type => document.addEventListener(type, event => event.preventDefault(), { passive: false }));
+document.addEventListener("wheel", event => { if (event.ctrlKey) event.preventDefault(); }, { passive: false });
 prayButton.addEventListener("click", pray); pickupButton.addEventListener("click", takeIncense); incenseButton.addEventListener("click", lightIncense); danceButton.addEventListener("click", performTrick); bellButton.addEventListener("click", knockBell); woodfishButton.addEventListener("click", toggleWoodfish); musicButton.addEventListener("click", toggleMusic);
 fortuneClose.addEventListener("click", () => fortunePanel.hidden = true);
 document.getElementById("weather-close").addEventListener("click", () => weatherPanel.hidden = true);
@@ -2060,6 +2086,98 @@ function setNetworkStatus({ state, message, online }) {
     [...remotePlayers.keys()].forEach(removeRemotePlayer);
     onlineCount.textContent = "1 人";
   }
+}
+
+function formatChatTime(value) {
+  const date = new Date(Number(value) || Date.now());
+  return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function updateChatUnread() {
+  chatUnread.hidden = unreadChatCount === 0;
+  chatUnread.textContent = unreadChatCount > 99 ? "99+" : String(unreadChatCount);
+}
+
+function scrollChatToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function appendChatMessage(message, options = {}) {
+  const text = String(message?.text || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (!text) return;
+  chatMessages.querySelector(".chat-empty")?.remove();
+  const item = document.createElement("div");
+  item.className = "chat-message";
+  if (message.playerId === network?.playerId) item.classList.add("self");
+  const head = document.createElement("div");
+  head.className = "chat-message-head";
+  const author = document.createElement("strong");
+  author.textContent = message.nickname || "香客";
+  const time = document.createElement("time");
+  time.textContent = formatChatTime(message.at);
+  const body = document.createElement("p");
+  body.textContent = text;
+  head.append(author, time);
+  item.append(head, body);
+  chatMessages.append(item);
+  chatHistory.push({ ...message, text });
+  while (chatHistory.length > 50) {
+    chatHistory.shift();
+    chatMessages.firstElementChild?.remove();
+  }
+  if (!options.silent && chatPanel.hidden) {
+    unreadChatCount += 1;
+    updateChatUnread();
+  }
+  if (!chatPanel.hidden || options.forceScroll) scrollChatToBottom();
+}
+
+function renderChatHistory(messages) {
+  chatHistory.length = 0;
+  chatMessages.replaceChildren();
+  const entries = Array.isArray(messages) ? messages.slice(-50) : [];
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "chat-empty";
+    empty.textContent = "还没有人说话，先打个招呼吧。";
+    chatMessages.append(empty);
+  } else {
+    entries.forEach(message => appendChatMessage(message, { silent: true }));
+  }
+  unreadChatCount = 0;
+  updateChatUnread();
+  requestAnimationFrame(scrollChatToBottom);
+}
+
+function setChatPanel(open) {
+  chatPanel.hidden = !open;
+  chatToggle.setAttribute("aria-expanded", String(open));
+  if (open) {
+    resetJoystick();
+    keys.forward = keys.backward = keys.left = keys.right = false;
+    unreadChatCount = 0;
+    updateChatUnread();
+    requestAnimationFrame(() => {
+      scrollChatToBottom();
+      chatInput.focus({ preventScroll: true });
+    });
+  } else {
+    chatInput.blur();
+  }
+}
+
+function sendChatFromUI() {
+  const text = chatInput.value.replace(/\s+/g, " ").trim();
+  if (!text) return;
+  if (!network?.connected) {
+    showToast("加入房间后才能发送消息。");
+    return;
+  }
+  if (!network.sendChat(text)) {
+    showToast("消息发送失败，请检查联机状态。");
+    return;
+  }
+  chatInput.value = "";
 }
 
 function saveLocalValue(key, value) {
@@ -2100,6 +2218,7 @@ network = createTempleNetwork({
       online: message.players?.length || 1
     });
     syncRemotePlayers(message.players || []);
+    renderChatHistory(message.messages || []);
   },
   onSnapshot: players => {
     syncRemotePlayers(players);
@@ -2115,10 +2234,21 @@ network = createTempleNetwork({
     removeRemotePlayer(playerId);
     onlineCount.textContent = `${remotePlayers.size + 1} 人`;
   },
-  onAction: setRemoteAction
+  onAction: setRemoteAction,
+  onChat: message => appendChatMessage(message)
 });
 
 joinRoomButton.addEventListener("click", joinRoomFromUI);
+chatToggle.addEventListener("click", () => setChatPanel(chatPanel.hidden));
+chatClose.addEventListener("click", () => setChatPanel(false));
+chatForm.addEventListener("submit", event => {
+  event.preventDefault();
+  sendChatFromUI();
+});
+chatInput.addEventListener("focus", () => {
+  resetJoystick();
+  keys.forward = keys.backward = keys.left = keys.right = false;
+});
 [nicknameInput, roomInput].forEach(input => {
   input.addEventListener("keydown", event => {
     if (event.key === "Enter") joinRoomFromUI();
@@ -2136,6 +2266,7 @@ const initialNickname = savedNickname || `香客${Math.floor(1000 + Math.random(
 const initialRoom = initialParams.get("room") || savedRoom || "lobby";
 nicknameInput.value = initialNickname;
 roomInput.value = initialRoom;
+renderChatHistory([]);
 if (network.configured) {
   joinRoomFromUI();
 } else {

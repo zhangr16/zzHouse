@@ -6,6 +6,7 @@
 - 最多 10 人同房间（可用 `MAX_PLAYERS` 调整）
 - 玩家位置、朝向、行走状态同步
 - 跪拜、炫技、敲钟、木鱼、上香动作广播
+- 同房间文字聊天与最近 50 条房间消息
 - 心跳、断线清理、客户端自动重连
 
 当前版本故意不接入数据库和账号体系，房间状态全部在服务进程内存中，适合先验证多人体验。
@@ -58,17 +59,19 @@ http://localhost:8000/cloud-worship/?ws=ws://127.0.0.1:3000/ws&room=demo
 { "type": "join", "roomId": "lobby", "nickname": "香客" }
 { "type": "move", "x": 0, "z": 3, "heading": 3.14, "animation": "walk" }
 { "type": "action", "action": "pray" }
+{ "type": "chat", "text": "一起静心吧" }
 { "type": "ping" }
 ```
 
 服务端 -> 客户端：
 
 ```json
-{ "type": "welcome", "playerId": "...", "roomId": "lobby", "players": [] }
+{ "type": "welcome", "playerId": "...", "roomId": "lobby", "players": [], "messages": [] }
 { "type": "snapshot", "serverTime": 0, "players": [] }
 { "type": "player_join", "player": {} }
 { "type": "player_leave", "playerId": "..." }
 { "type": "action", "playerId": "...", "animation": "bell", "duration": 1400 }
+{ "type": "chat", "playerId": "...", "nickname": "香客", "text": "一起静心吧", "at": 0 }
 { "type": "pong" }
 ```
 

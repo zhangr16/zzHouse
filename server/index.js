@@ -10,6 +10,8 @@ const MAX_PLAYERS = Number.isFinite(requestedMaxPlayers)
   : 10;
 const SNAPSHOT_INTERVAL = 100;
 const PLAYER_TIMEOUT = 45000;
+const CHAT_COOLDOWN = 700;
+const CHAT_HISTORY_LIMIT = 50;
 const ACTION_DURATIONS = {
   pray: 7600,
   dance: 9200,
@@ -37,6 +39,10 @@ function sanitizeText(value, maxLength) {
 
 function normalizeRoomId(value) {
   return sanitizeText(value, 24).replace(/[^\p{L}\p{N}_-]/gu, "") || "lobby";
+}
+
+function sanitizeChatText(value) {
+  return sanitizeText(value, 80).replace(/\s+/g, " ");
 }
 
 function send(socket, payload) {
@@ -69,7 +75,7 @@ function publicPlayer(player) {
 function getRoom(roomId) {
   let room = rooms.get(roomId);
   if (!room) {
-    room = { id: roomId, players: new Map(), createdAt: Date.now() };
+    room = { id: roomId, players: new Map(), messages: [], createdAt: Date.now() };
     rooms.set(roomId, room);
   }
   return room;
@@ -116,7 +122,8 @@ function handleJoin(socket, message) {
     actionAnimation: null,
     actionUntil: 0,
     lastSeen: Date.now(),
-    lastMoveAt: Date.now()
+    lastMoveAt: Date.now(),
+    lastChatAt: 0
   };
 
   room.players.set(player.id, player);
@@ -128,7 +135,8 @@ function handleJoin(socket, message) {
     playerId: player.id,
     roomId,
     serverTime: Date.now(),
-    players: [...room.players.values()].map(publicPlayer)
+    players: [...room.players.values()].map(publicPlayer),
+    messages: room.messages
   });
   broadcast(room, { type: "player_join", player: publicPlayer(player) }, player.id);
 }
@@ -152,6 +160,30 @@ function handleMove(player, message) {
   player.animation = message.animation === "walk" ? "walk" : "idle";
   player.lastSeen = now;
   player.lastMoveAt = now;
+}
+
+function handleChat(player, message) {
+  const text = sanitizeChatText(message.text);
+  if (!text) return;
+
+  const now = Date.now();
+  if (now - player.lastChatAt < CHAT_COOLDOWN) return;
+
+  const room = rooms.get(player.roomId);
+  if (!room) return;
+
+  const chat = {
+    type: "chat",
+    playerId: player.id,
+    nickname: player.nickname,
+    text,
+    at: now
+  };
+  player.lastChatAt = now;
+  player.lastSeen = now;
+  room.messages.push(chat);
+  if (room.messages.length > CHAT_HISTORY_LIMIT) room.messages.shift();
+  broadcast(room, chat);
 }
 
 function handleAction(player, message) {
@@ -210,6 +242,7 @@ wss.on("connection", socket => {
     if (message.type === "join") handleJoin(socket, message);
     else if (message.type === "move" && player) handleMove(player, message);
     else if (message.type === "action" && player) handleAction(player, message);
+    else if (message.type === "chat" && player) handleChat(player, message);
     else if (message.type === "ping" && player) {
       player.lastSeen = Date.now();
       send(socket, { type: "pong", serverTime: Date.now() });

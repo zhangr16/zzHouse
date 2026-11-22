@@ -102,6 +102,11 @@ export function createTempleNetwork(handlers = {}) {
       return;
     }
 
+    if (message.type === "chat") {
+      handlers.onChat?.(message);
+      return;
+    }
+
     if (message.type === "pong") {
       lastPongAt = Date.now();
       return;
@@ -242,6 +247,12 @@ export function createTempleNetwork(handlers = {}) {
     return send({ type: "action", action: String(action || "") });
   }
 
+  function sendChat(text) {
+    const message = String(text || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    if (!message) return false;
+    return send({ type: "chat", text: message });
+  }
+
   notify(endpoint ? "idle" : "offline", endpoint ? "可加入多人房间" : "单机模式 · 配置实时服务后可多人");
 
   return {
@@ -252,6 +263,7 @@ export function createTempleNetwork(handlers = {}) {
     connect,
     disconnect,
     sendMove,
-    sendAction
+    sendAction,
+    sendChat
   };
 }

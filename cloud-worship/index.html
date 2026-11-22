@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#120a08">
   <title>云拜佛 · 云上禅寺</title>
-  <link rel="stylesheet" href="assets/css/temple.css?v=20261122multiplayer">
+  <link rel="stylesheet" href="assets/css/temple.css?v=20261122joystick">
   <script>
     // CloudBase 云托管 WebSocket 地址，例如 wss://temple-realtime-xxx.ap-shanghai.app.tcloudbase.com/ws
     window.CLOUD_TEMPLE_WS = "wss://temple-realtime-352396-5-1253854600.sh.run.tcloudbase.com/ws";
@@ -21,8 +21,9 @@
       <a class="back-button" href="../index.html">← 首页</a>
       <div class="temple-title"><strong>云上禅寺</strong><span>走动 · 跪拜 · 上香</span></div>
       <div class="top-controls">
-        <button id="view-reset" type="button">视角</button>
+        <button id="view-reset" type="button">复位</button>
         <button id="music-button" type="button">🎵</button>
+        <button id="chat-toggle" type="button" aria-label="房间聊天" aria-controls="chat-panel" aria-expanded="false">💬<span class="chat-unread" id="chat-unread" hidden>0</span></button>
       </div>
     </header>
     <div class="loading-overlay" id="loading-overlay">
@@ -38,6 +39,18 @@
       </div>
       <span id="network-status">单机模式</span>
     </div>
+    <div class="virtual-joystick" id="virtual-joystick" aria-label="移动摇杆">
+      <div class="joystick-ring" id="joystick-base"><div class="joystick-knob" id="joystick-knob"></div></div>
+      <span>移动</span>
+    </div>
+    <section class="chat-panel" id="chat-panel" hidden aria-label="房间聊天">
+      <div class="chat-head"><strong>房间聊天</strong><button id="chat-close" type="button" aria-label="关闭聊天">×</button></div>
+      <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+      <form class="chat-form" id="chat-form">
+        <input id="chat-input" maxlength="80" placeholder="和同修说句话…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button type="submit">发送</button>
+      </form>
+    </section>
     <div class="action-bar">
       <button id="pickup-button" type="button" disabled>取香</button>
       <button id="incense-button" type="button" disabled>上香</button>
@@ -47,8 +60,8 @@
       <button id="pray-button" type="button" disabled>跪拜</button>
     </div>
     <div class="control-tip">
-      <span class="desktop-tip">WASD / 方向键走动 · 橙毯上跪拜测算运势 · K 上香 · G 炫技 · 拖动旋转视角</span>
-      <span class="mobile-tip">点击地面走动 · 橙毯上跪拜测算运势 · 炫技 · 拖动旋转视角</span>
+      <span class="desktop-tip">WASD / 方向键或左下摇杆走动 · 橙毯上跪拜测算运势 · K 上香 · G 炫技 · 拖动旋转视角</span>
+      <span class="mobile-tip">拖动左下摇杆走动 · 橙毯上跪拜测算运势 · 炫技 · 拖动画面旋转视角</span>
     </div>
     <section class="fortune-panel" id="fortune-panel" hidden aria-live="polite">
       <div class="fortune-card">
@@ -85,6 +98,6 @@
       </div>
     </section>
   </div>
-  <script type="module" src="assets/js/temple.js?v=20261122multiplayer"></script>
+  <script type="module" src="assets/js/temple.js?v=20261122joystick"></script>
 </body>
 </html>
