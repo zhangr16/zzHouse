@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>云钓鱼 · 游戏大厅</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon">🎣</span>
+        <div>
+          <h1>云钓鱼大厅</h1>
+          <p>选择钓场，准备出发</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="clock">
+          <span id="hall-date">----年--月--日</span>
+          <strong id="hall-time">--:--:--</strong>
+        </div>
+        <div class="wallet">
+          <span>💰 <strong id="hall-coins">0</strong></span>
+          <span>🐟 <strong id="hall-catches">0</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <a class="tab" href="../index.html">返回首页</a>
+    </nav>
+
+    <section class="hall-hero">
+      <div class="hall-copy">
+        <span class="hall-kicker">CLOUD FISHING</span>
+        <h2>打开钓箱，出发钓鱼</h2>
+        <p>盯住浮标下沉的瞬间，起竿后控制鱼线力度，把渔获收进背包。</p>
+        <div class="hall-actions">
+          <a class="primary hall-play" href="fishing.html">进入钓鱼界面</a>
+          <a class="ghost-link" href="fishing.html#shop-view">打开商店</a>
+        </div>
+      </div>
+      <div class="hall-summary">
+        <div>
+          <span>总渔获</span>
+          <strong id="summary-catches">0</strong>
+        </div>
+        <div>
+          <span>累计收益</span>
+          <strong id="summary-earned">0</strong>
+        </div>
+        <div>
+          <span>图鉴进度</span>
+          <strong id="summary-collection">0/51</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="hall-section">
+      <div class="section-head">
+        <h2>钓场列表</h2>
+        <span>当前选择会自动同步到钓鱼界面</span>
+      </div>
+      <div class="hall-locations" id="hall-locations"></div>
+    </section>
+  </div>
+  <script src="assets/js/hall.js"></script>
+</body>
+</html>

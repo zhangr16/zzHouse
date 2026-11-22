@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a16">
+  <title>吃喝玩乐 · 酒桌游戏机</title>
+  <link rel="stylesheet" href="assets/css/party.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="back-link" href="../index.html">← 首页</a>
+      <div class="brand">
+        <span class="brand-icon">🍻</span>
+        <div>
+          <h1>酒桌游戏机</h1>
+          <p>抓手指 · 摇骰子 · 真心话大冒险 · 数字炸弹</p>
+        </div>
+      </div>
+      <button class="ghost-button" id="reset-room" type="button">重置酒局</button>
+    </header>
+
+    <section class="player-panel" aria-label="玩家管理">
+      <div class="player-head">
+        <div>
+          <h2>酒局成员</h2>
+          <p>先添加玩家，所有游戏都会共用这份名单。</p>
+        </div>
+        <strong><span id="player-count">0</span> 人</strong>
+      </div>
+      <form class="player-form" id="player-form">
+        <input id="player-name" maxlength="12" placeholder="输入昵称，例如 Andy" required type="text">
+        <button type="submit">添加玩家</button>
+      </form>
+      <div class="player-list" id="player-list"></div>
+      <p class="player-tip" id="player-tip">至少添加 2 名玩家后开始游戏。</p>
+    </section>
+
+    <nav class="game-tabs" aria-label="酒桌游戏">
+      <button class="game-tab active" data-game="finger" type="button">✋ 抓手指</button>
+      <button class="game-tab" data-game="dice" type="button">🎲 摇骰子</button>
+      <button class="game-tab" data-game="truth" type="button">💬 真心话大冒险</button>
+      <button class="game-tab" data-game="bomb" type="button">💣 数字炸弹</button>
+      <button class="game-tab" data-game="wheel" type="button">🎯 转向转盘</button>
+    </nav>
+
+    <main class="game-stage">
+      <section class="game-panel active" id="game-finger">
+        <article class="stage-card">
+          <div class="finger-arena" id="finger-arena">
+            <div class="finger-command" id="finger-command-card">
+              <strong id="finger-command">准备</strong>
+            </div>
+          </div>
+          <div class="action-row">
+            <button class="primary-button" id="finger-start" type="button">随机喊令</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="game-panel" id="game-dice">
+        <article class="stage-card">
+          <div class="stage-head">
+            <h2>摇骰子</h2>
+            <span>选择骰子数量，摇出一组点数。比大小、定顺序都方便。</span>
+          </div>
+          <div class="dice-controls">
+            <label>骰子数量
+              <select id="dice-count">
+                <option value="1">1 颗</option>
+                <option value="2" selected>2 颗</option>
+                <option value="3">3 颗</option>
+                <option value="4">4 颗</option>
+                <option value="5">5 颗</option>
+              </select>
+            </label>
+            <strong class="dice-total">总分 <span id="dice-total">0</span></strong>
+          </div>
+          <div class="dice-table" id="dice-table"></div>
+          <div class="action-row">
+            <button class="primary-button" id="dice-roll" type="button">摇骰子</button>
+            <button class="ghost-button" id="dice-reset" type="button">清空</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="game-panel" id="game-truth">
+        <article class="stage-card">
+          <div class="stage-head">
+            <h2>真心话大冒险</h2>
+            <span>随机点名并抽取题目。题目保持轻松安全，不要让人为难。</span>
+          </div>
+          <div class="truth-stage">
+            <span id="truth-player">—</span>
+            <strong id="truth-type">等待开始</strong>
+            <p id="truth-text">选择真心话或大冒险。</p>
+          </div>
+          <div class="action-row">
+            <button class="primary-button" id="truth-button" type="button">心动真心话</button>
+            <button class="primary-button danger" id="dare-button" type="button">心动大冒险</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="game-panel" id="game-bomb">
+        <article class="stage-card">
+          <div class="stage-head">
+            <h2>数字炸弹</h2>
+            <span>系统藏一个 1–100 的炸弹数字。轮流猜数，范围不断缩小，踩中炸弹的人出局。</span>
+          </div>
+          <div class="bomb-board">
+            <div class="bomb-range">
+              <span id="bomb-low">1</span>
+              <strong>安全范围</strong>
+              <span id="bomb-high">100</span>
+            </div>
+            <div class="bomb-turn">
+              当前：<strong id="bomb-player">—</strong>
+            </div>
+            <form class="player-form" id="bomb-form">
+              <input id="bomb-guess" inputmode="numeric" max="100" min="1" placeholder="输入猜的数字" required type="number">
+              <button type="submit">猜</button>
+            </form>
+            <p class="player-tip" id="bomb-message">点击「新一局」开始。</p>
+          </div>
+          <div class="action-row">
+            <button class="primary-button" id="bomb-new" type="button">新一局</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="game-panel" id="game-wheel">
+        <article class="stage-card">
+          <div class="stage-head">
+            <h2>转向转盘</h2>
+            <span>不知道下一个谁来说？让转盘决定。转盘会随酒局名单自动更新。</span>
+          </div>
+          <div class="wheel-layout">
+            <div class="wheel-wrap">
+              <span class="wheel-pointer"></span>
+              <div class="wheel" id="wheel"></div>
+            </div>
+            <div class="wheel-result">
+              <strong id="wheel-result">—</strong>
+              <p id="wheel-message">至少 2 名玩家才能旋转。</p>
+            </div>
+          </div>
+          <div class="action-row">
+            <button class="primary-button" id="wheel-start" type="button">旋转转盘</button>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="party-footer">
+      <p>适量饮酒，未成年人不得饮酒。所有惩罚以安全、尊重、自愿为前提。</p>
+      <a href="../index.html">返回泽泽小屋</a>
+    </footer>
+  </div>
+  <script src="assets/js/party.js"></script>
+</body>
+</html>

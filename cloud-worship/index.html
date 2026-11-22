@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#120a08">
+  <title>云拜佛 · 云上禅寺</title>
+  <link rel="stylesheet" href="assets/css/temple.css?v=20261122multiplayer">
+  <script>
+    // CloudBase 云托管 WebSocket 地址，例如 wss://temple-realtime-xxx.ap-shanghai.app.tcloudbase.com/ws
+    window.CLOUD_TEMPLE_WS = "";
+  </script>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/examples/jsm/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+  </script>
+</head>
+<body>
+  <div id="temple-app">
+    <canvas id="temple-canvas"></canvas>
+    <header class="temple-topbar">
+      <a class="back-button" href="../index.html">← 首页</a>
+      <div class="temple-title"><strong>云上禅寺</strong><span>走动 · 跪拜 · 上香</span></div>
+      <div class="top-controls">
+        <button id="view-reset" type="button">视角</button>
+        <button id="music-button" type="button">🎵</button>
+      </div>
+    </header>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-mark">🙏</div><strong>正在进入云上禅寺</strong><span id="loading-text">加载 3D 引擎与殿堂材质…</span>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="multiplayer-panel" id="multiplayer-panel">
+      <div class="multiplayer-head"><span>多人共修</span><strong id="online-count">1 人</strong></div>
+      <div class="multiplayer-fields">
+        <input id="nickname-input" maxlength="16" placeholder="昵称" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <input id="room-input" maxlength="24" placeholder="房间码" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button id="join-room-button" type="button">加入</button>
+      </div>
+      <span id="network-status">单机模式</span>
+    </div>
+    <div class="action-bar">
+      <button id="pickup-button" type="button" disabled>取香</button>
+      <button id="incense-button" type="button" disabled>上香</button>
+      <button id="dance-button" type="button">炫技</button>
+      <button id="bell-button" type="button" disabled>敲钟</button>
+      <button id="woodfish-button" type="button" disabled>敲木鱼</button>
+      <button id="pray-button" type="button" disabled>跪拜</button>
+    </div>
+    <div class="control-tip">
+      <span class="desktop-tip">WASD / 方向键走动 · 橙毯上跪拜测算运势 · K 上香 · G 炫技 · 拖动旋转视角</span>
+      <span class="mobile-tip">点击地面走动 · 橙毯上跪拜测算运势 · 炫技 · 拖动旋转视角</span>
+    </div>
+    <section class="fortune-panel" id="fortune-panel" hidden aria-live="polite">
+      <div class="fortune-card">
+        <button class="fortune-close" id="fortune-close" type="button" aria-label="关闭今日运势">×</button>
+        <p class="fortune-label">今日运势</p>
+        <h2 id="fortune-date">—</h2>
+        <div class="fortune-overall">
+          <strong id="fortune-overall">—</strong><span id="fortune-summary">—</span>
+        </div>
+        <div class="fortune-grid">
+          <div><span>事业</span><strong id="fortune-career">—</strong></div>
+          <div><span>财运</span><strong id="fortune-wealth">—</strong></div>
+          <div><span>健康</span><strong id="fortune-health">—</strong></div>
+          <div><span>人际</span><strong id="fortune-social">—</strong></div>
+        </div>
+        <div class="fortune-tags"><p>宜</p><span id="fortune-do">—</span></div>
+        <div class="fortune-tags warning"><p>忌</p><span id="fortune-avoid">—</span></div>
+      </div>
+    </section>
+    <section class="ritual-panel" id="zodiac-panel" hidden aria-live="polite">
+      <div class="ritual-card">
+        <p class="fortune-label">运势测算</p>
+        <h2>请选择你的星座</h2>
+        <div class="zodiac-grid" id="zodiac-grid"></div>
+      </div>
+    </section>
+    <section class="ritual-panel" id="weather-panel" hidden aria-live="polite">
+      <div class="ritual-card">
+        <button class="fortune-close" id="weather-close" type="button" aria-label="关闭天气">×</button>
+        <p class="fortune-label">天气毯 · 杭州地区</p>
+        <h2 id="weather-date">—</h2>
+        <div class="weather-grid" id="weather-grid"><div class="weather-loading">正在读取未来三天天气…</div></div>
+        <p class="weather-note" id="weather-note">正在连接天气服务…</p>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="assets/js/temple.js?v=20261122multiplayer"></script>
+</body>
+</html>

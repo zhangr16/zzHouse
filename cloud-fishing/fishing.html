@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>云钓鱼 · 钓鱼界面</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon">🎣</span>
+        <div>
+          <h1>钓鱼界面</h1>
+          <p>实时水面 · 手动起竿</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="clock">
+          <span id="date-text">----年--月--日</span>
+          <strong id="time-text">--:--:--</strong>
+        </div>
+        <div class="wallet">
+          <span>💰 <strong id="coin-count">0</strong></span>
+          <span>🐟 <strong id="catch-count">0</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <a class="tab" href="../index.html">首页</a>
+      <a class="tab" href="index.html">大厅</a>
+      <button class="tab active" data-view="fishing">钓鱼</button>
+      <button class="tab" data-view="bag">背包</button>
+      <button class="tab" data-view="shop">商店</button>
+      <button class="tab" data-view="aquarium">图鉴</button>
+    </nav>
+
+    <main>
+      <section id="fishing-view" class="view active">
+        <div class="weather-card" id="weather-card">
+          <div class="weather-main">
+            <span class="weather-icon" id="weather-current-icon">⏳</span>
+            <div>
+              <span class="weather-address" id="weather-address">正在定位当前地址…</span>
+              <strong id="weather-current-text">等待天气数据</strong>
+              <small id="weather-current-detail">浏览器会请求位置权限，用于获取当前天气。</small>
+            </div>
+          </div>
+          <div class="weather-tomorrow">
+            <span>明天</span>
+            <span id="weather-tomorrow-icon">⏳</span>
+            <div>
+              <strong id="weather-tomorrow-text">等待天气数据</strong>
+              <small id="weather-tomorrow-detail">--</small>
+            </div>
+          </div>
+          <div class="weather-footer">
+            <span id="weather-effect">天气加成：等待数据</span>
+            <button id="weather-refresh" type="button">刷新天气</button>
+          </div>
+        </div>
+        <div class="pond-card">
+          <div class="fishing-left">
+            <div class="pond-scene" id="pond-scene" data-location="stream">
+            <canvas class="scene-canvas" id="scene-canvas"></canvas>
+            <div class="scene-status hidden" id="scene-status">正在加载真实水面…</div>
+            <div class="scene-layer sky"></div>
+            <div class="scene-layer stars"></div>
+            <div class="scene-layer celestial"></div>
+            <div class="scene-layer far-mountains"></div>
+            <div class="scene-layer near-mountains"></div>
+            <div class="scene-layer forest"></div>
+            <div class="scene-layer mist"></div>
+            <div class="scene-layer water"></div>
+            <div class="scene-layer water-light"></div>
+            <div class="scene-layer reeds"></div>
+            <div class="scene-layer lotus"></div>
+            <div class="scene-layer stones"></div>
+            <div class="scene-layer lighthouse"></div>
+            <div class="scene-layer sparkle"></div>
+            <div class="weather-overlay" id="weather-overlay"></div>
+            <div class="fishing-line" id="fishing-line"></div>
+            <div class="bobber" id="bobber"><i></i></div>
+            <div class="splash" id="ripple"></div>
+            <svg class="boat-view" viewBox="0 0 1440 540" aria-hidden="true" preserveAspectRatio="xMidYMax slice">
+              <defs>
+                <linearGradient id="boat-hull" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#8d5234"></stop>
+                  <stop offset=".28" stop-color="#7b4026"></stop>
+                  <stop offset=".65" stop-color="#4f2517"></stop>
+                  <stop offset="1" stop-color="#280f09"></stop>
+                </linearGradient>
+                <linearGradient id="boat-deck" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#3d1d12"></stop>
+                  <stop offset=".42" stop-color="#6d3620"></stop>
+                  <stop offset="1" stop-color="#24100b"></stop>
+                </linearGradient>
+                <linearGradient id="boat-rim" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#d5a374"></stop>
+                  <stop offset=".36" stop-color="#9b5d36"></stop>
+                  <stop offset=".72" stop-color="#572c18"></stop>
+                  <stop offset="1" stop-color="#301509"></stop>
+                </linearGradient>
+                <linearGradient id="boat-brass" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#fff1bd"></stop>
+                  <stop offset=".42" stop-color="#d9a24b"></stop>
+                  <stop offset="1" stop-color="#7a5316"></stop>
+                </linearGradient>
+                <linearGradient id="boat-sheen" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="rgba(255,241,214,0)"></stop>
+                  <stop offset=".42" stop-color="rgba(255,238,206,.19)"></stop>
+                  <stop offset="1" stop-color="rgba(255,241,214,0)"></stop>
+                </linearGradient>
+              </defs>
+              <g filter="drop-shadow(0 26px 42px rgba(0,8,14,.52))">
+                <path d="M-30 540 L104 232 C242 156 408 126 720 124 C1032 126 1198 156 1336 232 L1470 540 Z" fill="url(#boat-hull)"></path>
+                <path d="M62 540 L150 282 C282 212 432 180 720 178 C1008 180 1158 212 1290 282 L1378 540 Z" fill="url(#boat-deck)"></path>
+                <g stroke="rgba(31,12,7,.72)" stroke-width="3" fill="none" opacity=".85">
+                  <path d="M92 510 C240 406 430 310 720 300 C1010 310 1200 406 1348 510"></path>
+                  <path d="M130 456 C276 372 452 290 720 280 C988 290 1164 372 1310 456"></path>
+                  <path d="M172 398 C312 336 472 272 720 262 C968 272 1128 336 1268 398"></path>
+                </g>
+                <path d="M-30 540 L104 232 C242 156 408 126 720 124 C1032 126 1198 156 1336 232 L1470 540 Z" fill="url(#boat-sheen)"></path>
+                <path d="M104 232 C242 156 408 126 720 124 C1032 126 1198 156 1336 232" stroke="url(#boat-rim)" stroke-width="24" fill="none" stroke-linecap="round"></path>
+                <path d="M150 282 C282 212 432 180 720 178 C1008 180 1158 212 1290 282" stroke="rgba(247,203,151,.26)" stroke-width="7" fill="none"></path>
+                <path d="M288 316 C420 260 542 232 720 228" stroke="url(#boat-brass)" stroke-width="7" fill="none" opacity=".8"></path>
+                <path d="M1152 316 C1020 260 898 232 720 228" stroke="url(#boat-brass)" stroke-width="7" fill="none" opacity=".52"></path>
+                <circle cx="238" cy="394" r="46" fill="none" stroke="rgba(236,203,158,.24)" stroke-width="10"></circle>
+                <path d="M1202 394 L1164 366 M1202 394 L1158 416 M1202 394 L1244 424" stroke="rgba(236,203,158,.22)" stroke-width="7" stroke-linecap="round"></path>
+                <path d="M238 394 L276 366 M238 394 L282 416 M238 394 L196 424" stroke="rgba(236,203,158,.31)" stroke-width="7" stroke-linecap="round"></path>
+              </g>
+            </svg>
+            <svg class="rod-view" viewBox="0 0 520 680" aria-hidden="true" preserveAspectRatio="xMidYMax meet">
+              <defs>
+                <linearGradient id="rod-body" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#f2f8ff"></stop>
+                  <stop offset=".22" stop-color="#a9b9c9"></stop>
+                  <stop offset=".48" stop-color="#43525f"></stop>
+                  <stop offset=".76" stop-color="#1a2630"></stop>
+                  <stop offset="1" stop-color="#08111a"></stop>
+                </linearGradient>
+                <linearGradient id="rod-cork" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#8f643e"></stop>
+                  <stop offset=".2" stop-color="#d7a973"></stop>
+                  <stop offset=".45" stop-color="#f3d0a0"></stop>
+                  <stop offset=".72" stop-color="#b6804f"></stop>
+                  <stop offset="1" stop-color="#6c482c"></stop>
+                </linearGradient>
+                <linearGradient id="reel-metal" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#faffff"></stop>
+                  <stop offset=".28" stop-color="#c3d1de"></stop>
+                  <stop offset=".56" stop-color="#6a7c8d"></stop>
+                  <stop offset=".82" stop-color="#2d3a46"></stop>
+                  <stop offset="1" stop-color="#111c25"></stop>
+                </linearGradient>
+                <radialGradient id="ground-shadow" cx=".5" cy=".5" r=".5">
+                  <stop offset="0" stop-color="rgba(0,10,16,.48)"></stop>
+                  <stop offset="1" stop-color="rgba(0,10,16,0)"></stop>
+                </radialGradient>
+              </defs>
+              <ellipse cx="265" cy="667" rx="145" ry="23" fill="url(#ground-shadow)"></ellipse>
+              <g class="rod-root">
+                <path d="M256 14 L265 13 L287 487 L266 493 Z" fill="url(#rod-body)"></path>
+                <path d="M258 18 C257 170 262 320 272 470" stroke="rgba(255,255,255,.5)" stroke-width="1.5" fill="none" opacity=".45"></path>
+                <path d="M262 20 C261 180 267 330 278 472" stroke="rgba(0,11,20,.48)" stroke-width="1.1" fill="none" opacity=".55"></path>
+                <g stroke="rgba(225,240,255,.4)" stroke-width="1.4">
+                  <path d="M256 82 L271 87"></path><path d="M258 154 L274 159"></path>
+                  <path d="M261 226 L277 231"></path><path d="M264 298 L280 303"></path>
+                  <path d="M267 370 L283 375"></path>
+                </g>
+                <rect x="243" y="481" width="50" height="156" rx="21" fill="url(#rod-cork)"></rect>
+                <g stroke="rgba(69,40,17,.32)" stroke-width="1">
+                  <path d="M243 504 C262 511 283 511 293 505"></path>
+                  <path d="M242 528 C264 536 286 535 293 528"></path>
+                  <path d="M242 552 C264 560 286 559 293 551"></path>
+                  <path d="M243 576 C264 584 285 583 292 575"></path>
+                  <path d="M245 600 C265 607 284 606 291 599"></path>
+                </g>
+                <g filter="drop-shadow(0 9px 12px rgba(0,9,17,.38))">
+                  <circle cx="232" cy="532" r="40" fill="#1d2832" stroke="rgba(255,255,255,.1)" stroke-width="2"></circle>
+                  <circle cx="232" cy="532" r="31" fill="url(#reel-metal)"></circle>
+                  <circle cx="232" cy="532" r="14" fill="#101a22" stroke="rgba(255,255,255,.16)"></circle>
+                  <path d="M232 532 L262 504" stroke="#dce9f5" stroke-width="7" stroke-linecap="round"></path>
+                  <circle cx="265" cy="501" r="10" fill="#2d3b47" stroke="rgba(255,255,255,.24)"></circle>
+                  <path d="M211 508 C229 497 251 498 263 509" stroke="rgba(255,255,255,.5)" stroke-width="2.2" fill="none"></path>
+                </g>
+              </g>
+            </svg>
+            <div class="rod-control" id="rod-control">
+              <svg class="control-rings" viewBox="0 0 132 132" aria-hidden="true">
+                <defs>
+                  <linearGradient id="progress-arc" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#53ffd8"></stop>
+                    <stop offset="1" stop-color="#7dff9f"></stop>
+                  </linearGradient>
+                  <linearGradient id="tension-arc" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#ffd27a"></stop>
+                    <stop offset="1" stop-color="#ff6359"></stop>
+                  </linearGradient>
+                </defs>
+                <circle class="control-track" cx="66" cy="66" r="57"></circle>
+                <circle class="tension-ring" id="tension-ring" cx="66" cy="66" r="48" pathLength="100" transform="rotate(-90 66 66)"></circle>
+                <circle class="progress-ring" id="progress-ring" cx="66" cy="66" r="57" pathLength="100" transform="rotate(-90 66 66)"></circle>
+              </svg>
+              <span class="control-readout" id="progress-label">待机</span>
+              <button id="fishing-action" class="primary rod-action" type="button">抛竿</button>
+            </div>
+            <div class="aim-game hidden" id="aim-game">
+              <div class="aim-track">
+                <span class="aim-zone"></span>
+                <span class="aim-cursor" id="aim-cursor"></span>
+              </div>
+              <p id="aim-text">再次点击，在绿区锁定抛点</p>
+            </div>
+            <div class="catch-reveal" id="catch-reveal">
+              <div class="reveal-rays"></div>
+              <div class="reveal-content">
+                <div class="reveal-fish" id="reveal-fish">🐟</div>
+                <div class="reveal-title">钓到了！</div>
+                <div class="reveal-name" id="reveal-name">鲫鱼</div>
+                <div class="reveal-details" id="reveal-details">0.35kg · +12 金币</div>
+                <div class="reveal-actions">
+                  <button id="save-catch-photo" type="button">保存照片</button>
+                  <button id="share-catch" type="button">分享</button>
+                </div>
+              </div>
+              <span class="reveal-close-hint">点击任意位置关闭</span>
+              <div class="confetti" id="confetti"></div>
+            </div>
+          </div>
+          </div>
+          <div class="scene-toolbar">
+            <div class="scene-actions">
+              <button id="ambient-toggle" type="button" title="环境音效">🔊 环境</button>
+            </div>
+            <div class="scene-location-selector" id="scene-location-selector"></div>
+          </div>
+          <div class="pond-info">
+            <h2 id="location-name">清晨溪流</h2>
+            <p id="location-desc">水清流急，常见溪流鱼，偶尔能遇到山泉特产。</p>
+            <div class="equipment-status" id="equipment-status"></div>
+            <div class="fishing-status" id="fishing-status">点击“抛竿”开始</div>
+            <div class="controls">
+              <button id="sell-all">一键卖鱼</button>
+              <a class="ghost-link" href="index.html">返回大厅选钓场</a>
+            </div>
+          </div>
+        </div>
+        <div class="log-card">
+          <h3>最近渔获</h3>
+          <div id="catch-log" class="catch-log"><p class="empty">还没有钓到鱼。</p></div>
+        </div>
+      </section>
+
+      <section id="bag-view" class="view">
+        <div class="section-head">
+          <h2>背包</h2>
+          <button id="sell-all-bag">一键卖出</button>
+        </div>
+        <div id="bag-list" class="item-grid"></div>
+      </section>
+
+      <section id="shop-view" class="view">
+        <div class="section-head">
+          <h2>钓具商店</h2>
+          <span>装备永久生效，自动替换当前使用的同类装备</span>
+        </div>
+        <h3 class="shop-title">鱼竿</h3>
+        <div id="rod-shop" class="item-grid"></div>
+        <h3 class="shop-title">鱼饵</h3>
+        <div id="bait-shop" class="item-grid"></div>
+        <h3 class="shop-title">辅助装备</h3>
+        <div id="accessory-shop" class="item-grid"></div>
+      </section>
+
+      <section id="aquarium-view" class="view">
+        <div class="section-head">
+          <h2>图鉴 · 水族箱</h2>
+          <span id="aquarium-progress"></span>
+        </div>
+        <div class="aquarium-stage">
+          <div class="aquarium-water" id="aquarium-tank"></div>
+        </div>
+        <div id="aquarium-list"></div>
+        <div class="danger-zone">
+          <button id="reset-save">重置存档</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="assets/js/fishing.js"></script>
+  <script>
+    document.addEventListener("contextmenu", (event) => {
+      if (event.target.closest(".pond-scene, .aquarium-water, .fish-image")) {
+        event.preventDefault();
+      }
+    });
+  </script>
+  <script type="module" src="assets/js/scene3d.js"></script>
+</body>
+</html>
