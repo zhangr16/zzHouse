@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#120a08">
   <title>云拜佛 · 云上禅寺</title>
-  <link rel="stylesheet" href="assets/css/temple.css?v=20261122joystick">
+  <link rel="stylesheet" href="assets/css/temple.css?v=20261123hallfix">
   <script>
     // CloudBase 云托管 WebSocket 地址，例如 wss://temple-realtime-xxx.ap-shanghai.app.tcloudbase.com/ws
     window.CLOUD_TEMPLE_WS = "wss://temple-realtime-352396-5-1253854600.sh.run.tcloudbase.com/ws";
@@ -19,30 +19,24 @@
     <canvas id="temple-canvas"></canvas>
     <header class="temple-topbar">
       <a class="back-button" href="../index.html">← 首页</a>
-      <div class="temple-title"><strong>云上禅寺</strong><span>走动 · 跪拜 · 上香</span></div>
+      <div class="temple-title"><strong>云上禅寺</strong><span>走动 · 跪拜 · 上香 · 换装</span></div>
       <div class="top-controls">
-        <button id="view-reset" type="button">复位</button>
+        <span class="time-indicator" id="time-indicator" aria-label="当前时间">🕯️ --:--</span>
+        <button id="skin-button" type="button" aria-label="切换皮肤">👕</button>
         <button id="music-button" type="button">🎵</button>
-        <button id="chat-toggle" type="button" aria-label="房间聊天" aria-controls="chat-panel" aria-expanded="false">💬<span class="chat-unread" id="chat-unread" hidden>0</span></button>
       </div>
     </header>
     <div class="loading-overlay" id="loading-overlay">
-      <div class="loading-mark">🙏</div><strong>正在进入云上禅寺</strong><span id="loading-text">加载 3D 引擎与殿堂材质…</span>
+      <div class="loading-mark">🙏</div><strong>正在进入云上禅寺</strong><span id="loading-text">加载庭院、殿堂与基础材质…</span>
     </div>
     <div class="toast" id="toast"></div>
-    <div class="multiplayer-panel" id="multiplayer-panel">
-      <div class="multiplayer-head"><span>多人共修</span><strong id="online-count">1 人</strong></div>
-      <div class="multiplayer-fields">
-        <input id="nickname-input" maxlength="16" placeholder="昵称" autocomplete="off" autocapitalize="off" spellcheck="false">
-        <input id="room-input" maxlength="24" placeholder="房间码" autocomplete="off" autocapitalize="off" spellcheck="false">
-        <button id="join-room-button" type="button">加入</button>
-      </div>
-      <span id="network-status">单机模式</span>
-    </div>
+    <div class="entrance-hint" id="entrance-hint">🚪 前方入口 · 继续向前进入正殿</div>
     <div class="virtual-joystick" id="virtual-joystick" aria-label="移动摇杆">
       <div class="joystick-ring" id="joystick-base"><div class="joystick-knob" id="joystick-knob"></div></div>
       <span>移动</span>
     </div>
+    <button class="skill-fab" id="dance-button" type="button">🏀 炫技</button>
+    <button class="chat-fab" id="chat-toggle" type="button" aria-label="房间聊天" aria-controls="chat-panel" aria-expanded="false">💬<span class="chat-unread" id="chat-unread" hidden>0</span></button>
     <section class="chat-panel" id="chat-panel" hidden aria-label="房间聊天">
       <div class="chat-head"><strong>房间聊天</strong><button id="chat-close" type="button" aria-label="关闭聊天">×</button></div>
       <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
@@ -54,14 +48,15 @@
     <div class="action-bar">
       <button id="pickup-button" type="button" disabled>取香</button>
       <button id="incense-button" type="button" disabled>上香</button>
-      <button id="dance-button" type="button">炫技</button>
+      <button id="oracle-button" type="button" disabled>抽签</button>
+      <button id="release-button" type="button" disabled>放生</button>
       <button id="bell-button" type="button" disabled>敲钟</button>
       <button id="woodfish-button" type="button" disabled>敲木鱼</button>
       <button id="pray-button" type="button" disabled>跪拜</button>
     </div>
     <div class="control-tip">
-      <span class="desktop-tip">WASD / 方向键或左下摇杆走动 · 橙毯上跪拜测算运势 · K 上香 · G 炫技 · 拖动旋转视角</span>
-      <span class="mobile-tip">拖动左下摇杆走动 · 橙毯上跪拜测算运势 · 炫技 · 拖动画面旋转视角</span>
+      <span class="desktop-tip">WASD / 方向键或左下摇杆走动 · 橙毯上跪拜测算运势 · K 上香 · G 个性技能 · 池塘点击放生 · 拖动旋转视角</span>
+      <span class="mobile-tip">拖动左下摇杆走动 · 橙毯上跪拜测算运势 · 右下角个性技能 · 池塘点击放生 · 拖动画面旋转视角</span>
     </div>
     <section class="fortune-panel" id="fortune-panel" hidden aria-live="polite">
       <div class="fortune-card">
@@ -91,13 +86,34 @@
     <section class="ritual-panel" id="weather-panel" hidden aria-live="polite">
       <div class="ritual-card">
         <button class="fortune-close" id="weather-close" type="button" aria-label="关闭天气">×</button>
-        <p class="fortune-label">天气毯 · 杭州地区</p>
+        <p class="fortune-label" id="weather-location">天气毯 · 正在定位…</p>
         <h2 id="weather-date">—</h2>
         <div class="weather-grid" id="weather-grid"><div class="weather-loading">正在读取未来三天天气…</div></div>
         <p class="weather-note" id="weather-note">正在连接天气服务…</p>
       </div>
     </section>
+    <section class="ritual-panel" id="oracle-panel" hidden aria-live="polite">
+      <div class="ritual-card oracle-card">
+        <button class="fortune-close" id="oracle-close" type="button" aria-label="关闭签文">×</button>
+        <p class="fortune-label oracle-label">求签 · 云上禅寺</p>
+        <div class="oracle-stick" id="oracle-stick-icon">🥢</div>
+        <h2 id="oracle-grade">—</h2>
+        <p class="oracle-poem" id="oracle-poem">—</p>
+        <div class="oracle-reading">
+          <div><span>解曰</span><strong id="oracle-reading">—</strong></div>
+          <div><span>宜</span><strong id="oracle-do">—</strong></div>
+          <div><span>忌</span><strong id="oracle-avoid">—</strong></div>
+        </div>
+      </div>
+    </section>
+    <section class="ritual-panel" id="skin-panel" hidden aria-live="polite">
+      <div class="ritual-card skin-card">
+        <button class="fortune-close" id="skin-close" type="button" aria-label="关闭皮肤选择">×</button>
+        <p class="fortune-label">切换皮肤</p>
+        <div class="skin-grid" id="skin-grid"></div>
+      </div>
+    </section>
   </div>
-  <script type="module" src="assets/js/temple.js?v=20261122joystick"></script>
+  <script type="module" src="assets/js/temple.js?v=20261123hallfix"></script>
 </body>
 </html>
